@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Scenario Editor</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <link href="js/vendor/bootstrap/css/bootstrap.css" rel="stylesheet">
+    <link href="js/vendor/jquery-ui-1.8.21/css/ui-darkness/jquery-ui-1.8.21.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+    <script src="js/vendor/head.js"></script>
+    <script type="text/javascript">
+      head.js("js/main.js");
+    </script>
+  </head>
+  <body id="body">
+    <script type="text/template" id="demand-visualizer-window-template">
+      <div id="demand-visualizer-{{elemId}}">
+        {{content}}
+      </div>	
+    </script>
+    <script type="text/template" id="demand-graph-template">
+      <div id="demand-graph-{{elemId}}" class="demand-graph" style="padding: 10px;">
+      </div>
+    </script>
+    <script type="text/template" id="constant-demand-template">
+      <tr id="demand-display-{{elemId}}-{{demandVehicleIndex}}" class="demand-display">
+      <td class="demand-vehicle-type">{{demandVehicleType}}</td>
+      <td class="demand-count">{{demandVehicleCount}}
+        {% if(deviates) { %}
+           &plusmn; {{demandDeviation}}
+        {% } %}
+      </td>
+      <td>per<br/>hour</td>
+      </tr>
+    </script>
+    <!--navbar -->
+    <div id="main-nav" class="navbar">
+      <div class="container navbar-inner">
+        <!-- The top navigation is placed here as well the file uploader in put type -->
+        <script type="text/template" id="parent-item-menu-template">
+          <a class='dropdown-toggle' data-toggle='dropdown' href='#{{textLower}}'>{{text}}<b class='caret'></b></a>
+          <ul class='dropdown-menu'></ul>
+        </script>
+        <script type="text/template" id="child-item-menu-template">
+          <a href='#'>{{text}}</a>
+        </script>
+      </div>
+    </div>
+    <!--log in status -->
+    <div id="login-nav" class="navbar">
+      <div id="login-nav-container" class="login-container container navbar-inner">
+        <a href='#'><span class="login-via-color">Via</span> <span class="login-text-color">Login</span></a>
+      </div>
+    </div>
+    <!-- map bottom left corner buttons -->
+    <div class="btn-group">
+      <li id="lh" class="btn dropdown-toggle" data-toggle="dropdown" href="#l_list">Layers</li>
+      <li id="mh" class="btn dropdown-toggle" data-toggle="dropdown" href="#m_list">Mode</li>
+    </div>
+    <!--map -->
+    <div id="map_canvas" class="map_canvas_narrow"></div>
+    <!--scenario tree -->
+    <div id="right_tree">
+      <script type="text/template" id="toggle-tree-handle-template">
+      <div id="tree-resize">
+          <div id="tree-handle"></div>
+      </div>
+      </script>
+      <div id="tree_view">
+        <label for="right tree heading">Scenario<button class="btn" id="expand-all">+</button></label>
+      </div>
+        <script type="text/template" id="parent-item-tree-template">
+          <label for='{{textLower}}'>{{text}}</label>
+          <input type='checkbox' id='check-{{textLower}}' class="expand-tree" />
+          <label for='CB1'>&nbsp;</label>
+          <ol id='tree-parent-{{textLower}}' ></ol>
+        </script>
+    </div>
+    <!--bottom split ratio profile editor -->
+    <script type="text/template" id="split-ratio-editor-template">
+      <div class="ui-dialog ui-widget ui-widget-content ui-corner-all bottom-profile-editor">
+        <div class="ui-dialog-titlebar ui-widget-header ui-corner-all ui-helper-clearfix">
+          <span class="ui-dialog-title">Split Ratio Profile Editor: Node Id {{nodeId}}</span>
+          <a id="close-icon" class="ui-dialog-titlebar-close ui-corner-all" href="#" role="button">
+            <span class="ui-icon ui-icon-closethick">close</span>
+          </a>
+        </div>
+        <div class="bottom-profile-editor-form">
+          <form>
+            <fieldset>
+              <div class="inline-display">
+                <label for="dest-network-id" class="ui-widget">Destination Network ID:</label>
+                <input type="text" name="destination network id" id="dest-network-id" class="text ui-widget ui-widget-content ui-corner-all" value="{{destNetworkId}}"/>
+
+                <label class="ui-widget">Start Time (h:m::s):</label>
+                <input type="number"  id="start-hour" class="time-input text ui-widget ui-widget-content ui-corner-all" min="0" value="{{startTime['h']}}" />
+
+                <span class="time">:</span>
+                <input type="number" id="start-minute" class="time-input text ui-widget ui-widget-content ui-corner-all text ui-widget-content ui-corner-all" min="0" max="59" value="{{startTime['m']}}" />
+
+                <span class="time">::</span>
+                <input type="number" id="start-second" class="time-input text ui-widget ui-widget-content ui-corner-all" min="0" max="59" value="{{startTime['s']}}" />
+
+                <label class="ui-widget">Sampling Period (h:m::s):</label>
+                <input type="number"  id="sample-hour" class="time-input text ui-widget ui-widget-content ui-corner-all" min="0" value="{{sampleTime['h']}}" />
+
+                <span class="time">:</span>
+                <input type="number" id="sample-minute" class="time-input text ui-widget ui-widget-content ui-corner-all" min="0" max="59" value="{{sampleTime['m']}}" />
+
+                <span class="time">::</span>
+                <input type="number" id="sample-second" class="time-input text ui-widget ui-widget-content ui-corner-all" min="0" max="59" value="{{sampleTime['s']}}" />
+              </div>
+              <div class="inline-display">
+                <label for="vehicle-type" class="ui-widget">Vehicle Type:</label>
+                <select id="vehicle-type" name ="vehicle-type" class="ui-widget ui-widget-content-select ui-corner-all">
+                  <option value="0" name="">-----All-----</option>
+                  <option value="1" name="General">General</option>
+                  <option value="2" name="SOV">SOV</option>
+                  <option value="3" name="HOV">HOV</option>
+                  <option value="4" name="Hybrid">Hybrid</option>
+                  <option value="5" name="Electric">Electric</option>
+                  <option value="6" name="Truck 2">Truck 2</option>
+                  <option value="7" name="Truck 3">Truck 3</option>
+                  <option value="8" name="Truck 4">Truck 4</option>
+                  <option value="9" name="Truck 5">Truck 5</option>
+                  <option value="10" name="Motorcycle">Motorcycle</option>
+                  <option value="11" name="Truck 6">Truck 6</option>
+                  <option value="12" name="Bus">Bus</option>
+                  <option value="13" name="Bus 2">Bus 2</option>
+                </select>
+
+                <label for="link-in" class="ui-widget">Link In:</label>
+                <select id="link-in" name ="link-in" class="ui-widget ui-widget-content-select ui-corner-all">
+                  <option value="0" name="">-----All-----</option>
+                {% for (var index in inputLinks) { %}
+                  <option value="{{inputLinks[index]}}" name="">Link Id {{inputLinks[index]}}</option>
+                {% } %}
+                </select>
+
+                <label for="link-out" class="ui-widget">Link Out:</label>
+                <select id="link-out" name ="link-out" class="ui-widget ui-widget-content-select ui-corner-all">
+                  <option value="0" name="">-----All-----</option>
+                {% for (var index in outputLinks) { %}
+                  <option value="{{outputLinks[index]}}" name="">Link Id {{outputLinks[index]}}</option>
+                {% } %}
+                </select>
+
+                <input type="button" id="add-split-ratio-button" class="profile-button ui-widget ui-widget-content ui-corner-all" value="Add Split Ratio"/>
+                <input type="button" id="delete-split-ratio-button" class="profile-button ui-widget ui-widget-content ui-corner-all" value="Delete Split Ratio"/>
+              </div>
+              <div class="datatable-display">
+                <table cellpadding="0" cellspacing="0" border="0" class="editor_table" id="split-ratio-table"></table>
+              </div>
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </script>
+    <!--bottom demand profile editor -->
+    <script type="text/template" id="demand-editor-template">
+      <div class="ui-dialog ui-widget ui-widget-content ui-corner-all bottom-profile-editor">
+        <div class="ui-dialog-titlebar ui-widget-header ui-corner-all ui-helper-clearfix">
+          <span class="ui-dialog-title">Demand Profile Editor: Link Id {{linkId}}</span>
+          <a id="close-icon" class="ui-dialog-titlebar-close ui-corner-all" href="#" role="button">
+            <span class="ui-icon ui-icon-closethick">close</span>
+          </a>
+        </div>
+        <div class="bottom-profile-editor-form">
+          <form>
+            <fieldset>
+              <div class="inline-display">
+                <label for="dest-network-id" class="ui-widget">Destination Network ID:</label>
+                <input type="text" name="destination network id" id="dest-network-id" class="text ui-widget ui-widget-content ui-corner-all" value="{{destNetworkId}}"/>
+
+                <label class="ui-widget">Start Time (h:m::s):</label>
+                <input type="number"  id="start-hour" class="time-input text ui-widget ui-widget-content ui-corner-all" min="0" value="{{startTime['h']}}" />
+
+                <span class="time">:</span>
+                <input type="number" id="start-minute" class="time-input text ui-widget ui-widget-content ui-corner-all text ui-widget-content ui-corner-all" min="0" max="59" value="{{startTime['m']}}" />
+
+                <span class="time">::</span>
+                <input type="number" id="start-second" class="time-input text ui-widget ui-widget-content ui-corner-all" min="0" max="59" value="{{startTime['s']}}" />
+
+                <label class="ui-widget">Sampling Period (h:m::s):</label>
+                <input type="number"  id="sample-hour" class="time-input text ui-widget ui-widget-content ui-corner-all" min="0" value="{{sampleTime['h']}}" />
+
+                <span class="time">:</span>
+                <input type="number" id="sample-minute" class="time-input text ui-widget ui-widget-content ui-corner-all" min="0" max="59" value="{{sampleTime['m']}}" />
+
+                <span class="time">::</span>
+                <input type="number" id="sample-second" class="time-input text ui-widget ui-widget-content ui-corner-all" min="0" max="59" value="{{sampleTime['s']}}" />
+              </div>
+              <div class="inline-display">
+                <label for="std-dev-add" class="ui-widget">Additive Uncertainty:</label>
+                <input type="text" name="additive Uncertainty" id="std-dev-add" class="text ui-widget ui-widget-content ui-corner-all" value="{{stdDevAdd}}"/>
+
+                <label for="std_dev_mult" class="ui-widget">Multiplicative Uncertainty:</label>
+                <input type="text" name="multiplicative Uncertainty" id="std-dev-mult" class="text ui-widget ui-widget-content ui-corner-all" value="{{stdDevMult}}"/>
+
+                <label for="vehicle-type" class="ui-widget">Vehicle Type:</label>
+                <select id="vehicle-type" name ="vehicle-type" class="ui-widget ui-widget-content-select ui-corner-all">
+                  <option value="0" name="">-----All-----</option>
+                  <option value="1" name="General">General</option>
+                  <option value="2" name="SOV">SOV</option>
+                  <option value="3" name="HOV">HOV</option>
+                  <option value="4" name="Hybrid">Hybrid</option>
+                  <option value="5" name="Electric">Electric</option>
+                  <option value="6" name="Truck 2">Truck 2</option>
+                  <option value="7" name="Truck 3">Truck 3</option>
+                  <option value="8" name="Truck 4">Truck 4</option>
+                  <option value="9" name="Truck 5">Truck 5</option>
+                  <option value="10" name="Motorcycle">Motorcycle</option>
+                  <option value="11" name="Truck 6">Truck 6</option>
+                  <option value="12" name="Bus">Bus</option>
+                  <option value="13" name="Bus 2">Bus 2</option>
+                </select>
+
+                <input type="button" id="add-demand-button" class="profile-button ui-widget ui-widget-content ui-corner-all" value="Add Demand"/>
+                <input type="button" id="delete-demand-button" class="profile-button ui-widget ui-widget-content ui-corner-all" value="Delete Demand"/>
+              </div>
+              <div class="datatable-display">
+                <table cellpadding="0" cellspacing="0" border="0" class="editor_table" id="demand-table"></table>
+              </div>
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </script>
+    <!--bottom fd profile editor -->
+    <script type="text/template" id="fd-editor-template">
+      <div class="ui-dialog ui-widget ui-widget-content ui-corner-all bottom-profile-editor">
+        <div class="ui-dialog-titlebar ui-widget-header ui-corner-all ui-helper-clearfix">
+          <span class="ui-dialog-title">Fundamental Diagram Profile Editor: Link Id {{linkId}}</span>
+          <a id="close-icon" class="ui-dialog-titlebar-close ui-corner-all" href="#" role="button">
+            <span class="ui-icon ui-icon-closethick">close</span>
+          </a>
+        </div>
+        <div class="bottom-profile-editor-form">
+          <form>
+            <fieldset>
+              <div class="inline-display">
+
+                <label class="ui-widget">Start Time (h:m::s):</label>
+                <input type="number"  id="start-hour" class="time-input text ui-widget ui-widget-content ui-corner-all" min="0" value="{{startTime['h']}}" />
+
+                <span class="time">:</span>
+                <input type="number" id="start-minute" class="time-input text ui-widget ui-widget-content ui-corner-all text ui-widget-content ui-corner-all" min="0" max="59" value="{{startTime['m']}}" />
+
+                <span class="time">::</span>
+                <input type="number" id="start-second" class="time-input text ui-widget ui-widget-content ui-corner-all" min="0" max="59" value="{{startTime['s']}}" />
+
+                <label class="ui-widget">Sampling Period (h:m::s):</label>
+                <input type="number"  id="sample-hour" class="time-input text ui-widget ui-widget-content ui-corner-all" min="0" value="{{sampleTime['h']}}" />
+
+                <span class="time">:</span>
+                <input type="number" id="sample-minute" class="time-input text ui-widget ui-widget-content ui-corner-all" min="0" max="59" value="{{sampleTime['m']}}" />
+
+                <span class="time">::</span>
+                <input type="number" id="sample-second" class="time-input text ui-widget ui-widget-content ui-corner-all" min="0" max="59" value="{{sampleTime['s']}}" />
+              </div>
+              <div class="inline-display">
+
+                <label for="fd-type" class="ui-widget">FD Type:</label>
+                <select id="fd-type" name ="fd-type" class="ui-widget ui-widget-content-select ui-corner-all">
+                  <option value="" name="">-----------</option>
+                  <option value="1" name="Triangular">Triangular</option>
+                  <option value="2" name="Trapezoidal">Trapezoidal</option>
+                  <option value="3" name="Linear-Hyperbolic">Linear-Hyperbolic</option>
+                  <option value="4" name="Greenshields">Greenshields</option>
+                </select>
+
+                <input type="button" id="add-fd-button" class="profile-button ui-widget ui-widget-content ui-corner-all" value="Add FD"/>
+                <input type="button" id="delete-fd-button" class="profile-button ui-widget ui-widget-content ui-corner-all" value="Delete FD"/>
+              </div>
+              <div class="datatable-display">
+                <table cellpadding="0" cellspacing="0" border="0" class="editor_table" id="fd-table"></table>
+              </div>
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </script>
+    <!--floating view templates -->
+    <script type="text/template" id="context-menu-template">
+      <div id="{{elemId}}" class="{{elemClass}}">
+      </div>
+    </script>
+    <script type="text/template" id="message-panel-template">
+      {{message}} 
+    </script>
+
+    <script type="text/template" id="sensor-editor-dialog-template">
+      <ul>
+        <li><a href="#tabs-sensor">Sensor</a></li>
+        <li><a href="#tabs-sensor-data">Data</a></li>
+        <li><a href="#tabs-sensor-geo">Geo</a></li>
+      </ul>
+      <div id="tabs-sensor">
+        <form>
+          <fieldset>
+            <label for="sensor-type">Type</label>
+            <select id="sensor_type" name ="sensor-type" class="ui-widget-content-select ui-corner-all">
+              <option value="0" name="">--------------</option>
+              <option value="1" name="Loop">Loop</option>
+              <option value="2" name="Magnetic">Magnetic</option>
+              <option value="3" name="Radar">Radar</option>
+              <option value="4" name="Camera">Camera</option>
+              <option value="5" name="TMC">TMC</option>
+            </select><br/>
+            <label for="link_type">Original Link Type</label>
+            <input type="text" name="link_type" id="link_type" class="text ui-widget-content ui-corner-all" value="{{link_type}}" readonly/>
+            <label for="sensor-links">Link</label>
+            <input type="text" name="sensor-links" id="sensor_links" class="text ui-widget-content ui-corner-all" value="{{links}}" readonly/>
+            <label for="sensor-vds">PeMS VDS ID</label>
+            <input type="text" name="sensor-vds" id="sensor_vds" class="text ui-widget-content ui-corner-all" value=" {{vds}}" readonly/>
+          </fieldset>
+        </form>
+      </div>
+      <div id="tabs-sensor-data">
+        <form>
+          <fieldset>
+            <label>URL *</label>
+            <input type="text" name="sensor-url" id="sensor_url" class="text ui-widget-content ui-corner-all" value="{{url}}"/>
+            <label>{{url_desc}}</label>
+          </fieldset>
+        </form>      
+      </div>
+      <div id="tabs-sensor-geo">
+        <form>
+          <fieldset>
+            <label>Latitude</label>
+              <input type="text" name="sensor-lat" id="sensor_lat" class="text ui-widget-content ui-corner-all" value="{{lat}}"/>
+            <label>Longitude</label>
+              <input type="text" name="sensor-lng" id="sensor_lng" class="text ui-widget-content ui-corner-all" value="{{lng}}"/>
+            <label>Elevation</label>
+              <input type="text" name="sensor-elev" id="sensor_elevation" class="text ui-widget-content ui-corner-all" value="{{elev}}"/>
+            <button class="text ui-widget-content ui-corner-all" id="display-at-pos">Display at this position</button>
+          </fieldset>
+      </form>
+      </div>
+    </script>
+    <script type="text/template" id="node-editor-dialog-template">
+        <ul>
+          <li><a href="#tabs-node">Node</a></li>
+          <li><a href="#tabs-node-geo">Geo</a></li>
+          <li><a href="#tabs-node-split-ratio">Split Ratio</a></li>
+          <li><a href="#tabs-node-tools">Tools</a></li>
+        </ul>
+        <div id="tabs-node">
+          <form>
+            <fieldset>
+              <label for="name">Name</label>
+              <input type="text" name="name" id="name" class="text ui-widget-content ui-corner-all" value="{{name}}"/>
+              <label for="type">Type</label>
+              <select id="type" name ="type" class="ui-widget-content-select ui-corner-all">
+                <option value="0" name="">--------------</option>
+                <option value="1" name="Freeway">Freeway</option>
+                <option value="2" name="Highway">Highway</option>
+                <option value="3" name="Signalized Intersection">Signalized Intersection</option>
+                <option value="5" name="Simple">Simple</option>
+                <option value="4" name="Stop Intersection">Stop Intersection</option>
+                <option value="6" name="Terminal">Terminal</option>
+                <option value="7" name="Other">Other</option>
+              </select><br/>
+              <button id="edit-signal" class="text ui-widget-content ui-corner-all" >Edit Signal</button>
+            </fieldset>
+          </form>
+        </div>
+        <div id="tabs-node-geo">
+          <form>
+            <fieldset>
+              <label for="latitude">Latitude</label>
+              <input type="text" name="latitude" id="lat" class="text ui-widget-content ui-corner-all" disabled="true" value="{{lat}}"/>
+              <label for="longitude">Longitude</label>
+              <input type="text" name="longitude" id="lng" class="text ui-widget-content ui-corner-all" disabled="true" value="{{lng}}"/>
+              <label for="elevation">Elevation</label>
+              <input type="text" name="elevation" id="elevation" class="text ui-widget-content ui-corner-all" disabled="true" value="{{elevation}}"/><br/>
+              <input type="checkbox" name="lock" id="lock" class="text ui-widget-content ui-corner-all" {{lock}} />
+              <span>Lock node position</span>
+            </fieldset>
+          </form>
+        </div>
+        <div id="tabs-node-split-ratio">
+          {% if (!profile) { %}
+            <input type="button" id="create-split-ratio-profile" class="text ui-widget-content ui-corner-all" value="Create Split Ratio Profile"/>
+          {% } else { %}
+            <input type="button" id="edit-split-ratio-profile" class="text ui-widget-content ui-corner-all" value="Edit Split Ratio Profile"/>
+          {% } %}
+        </div>
+        <div id="tabs-node-tools">
+          <form>
+            <fieldset>
+              <button id="remove-join-links" class="text ui-widget-content ui-corner-all" >Remove and join links</button>
+              <button id="choose-name" class="text ui-widget-content ui-corner-all" >Choose name</button>
+            </fieldset>
+          </form>
+        </div>
+    </script>
+    <script type="text/template" id="link-editor-dialog-template">
+        <ul>
+          <li><a href="#tabs-link">Link</a></li>
+          <li><a href="#tabs-link-geo">Geo</a></li>
+          <li><a href="#tabs-link-fd">FD</a></li>
+          <li><a href="#tabs-link-demand">Demand</a></li>
+          <li><a href="#tabs-link-capacity">Capacity</a></li>
+          <li><a href="#tabs-link-tools">Tools</a></li>
+        </ul>
+        <div id="tabs-link">
+          <form>
+            <fieldset>
+              <label for="link_name">Link Name</label>
+              <input type="text" name="link-name" id="link_name" class="text ui-widget-content ui-corner-all" value="{{name}}"/>
+              <label for="link_type">Type</label>
+              <select id="link_type" name ="type" class="ui-widget-content-select ui-corner-all">
+                <option value="0" name="">--------------</option>
+                <option value="1" name="Freeway">Freeway</option>
+                <option value="2" name="Highway">Highway</option>
+                <option value="3" name="On-Ramp">On-Ramp</option>
+                <option value="4" name="Off-Ramp">Off-Ramp</option>
+                <option value="5" name="Interconnect">Interconnect</option>
+                <option value="6" name="HOV">HOV</option>
+                <option value="7" name="HOT">HOT</option>
+                <option value="8" name="Toll Lane">Toll Lane</option>
+                <option value="9" name="Heavy Vehicle Lane">Heavy Vehicle Lane</option>
+                <option value="10" name="Bus Lane">Bus Lane</option>
+                <option value="11" name="Street">Street</option>
+                <option value="12" name="Intersection Approach">Intersection Approach</option>
+                <option value="13" name="Left Turn Pocket">Left Turn Pocket</option>
+                <option value="14" name="Right Turn Pocket">Right Turn Pocket</option>
+                <option value="15" name="Source">Source</option>
+                <option value="16" name="Sink">Sink</option>
+              </select><br/>
+              <input type="checkbox" name="in_sync" id="in_sync" class="text ui-widget-content ui-corner-all" {{insync}} />
+              <span>In Sync</span>
+            </fieldset>
+          </form>
+        </div>
+        <div id="tabs-link-geo">
+          <form>
+            <fieldset>
+              <label for="num-lanes">Number of Lanes</label>
+              <input type="text" name="num-lanes" id="lanes" class="text ui-widget-content ui-corner-all" value="{{lanes}}"/>
+              <label for="lane-offset">Lane Offset</label>
+              <input type="text" name="lane-offset" id="lane_offset" class="text ui-widget-content ui-corner-all" value="{{laneOffset}}"/>
+              <label for="length">Length </label>
+              <input type="text" name="length" id="length" class="text ui-widget-content ui-corner-all" value="{{length}}"/><br/>
+            </fieldset>
+          </form>
+        </div>
+        <div id="tabs-link-fd">
+          {% if (!fdProfile) { %}
+          <input type="button" id="create-fd-profile" class="text ui-widget-content ui-corner-all" value="Create FD Profile"/>
+          {% } else { %}
+          <input type="button" id="edit-fd-profile" class="text ui-widget-content ui-corner-all" value="Edit FD Profile"/>
+          {% } %}
+        </div>
+        <div id="tabs-link-demand">
+          {% if (!demandProfile) { %}
+          <input type="button" id="create-demand-profile" class="text ui-widget-content ui-corner-all" value="Create Demand Profile"/>
+          {% } else { %}
+          <input type="button" id="edit-demand-profile" class="text ui-widget-content ui-corner-all" value="Edit Demand Profile"/>
+          {% } %}
+        </div>
+        <div id="tabs-link-capacity">
+          <form>
+            <fieldset>
+              <label>Start Time</label>
+              <label for="link-capacity-start-hour" class="time">h</label>              
+              <input type="number"  id="link_capacity_start_hour" class=" time-input text ui-widget-content ui-corner-all" min="0" value="{{cpStartTime['h']}}" />
+             
+              <label for="link-capacity-start-minute" class="time">: m</label>
+              <input type="number" id="link_capacity_start_minute" class=" time-input text ui-widget-content ui-corner-all" min="0" max="59" value="{{cpStartTime['m']}}" />
+              
+              <label for="link-capacity-start-second" class="time">:: s</label>
+              <input type="number" id="link_capacity_start_second" class=" time-input text ui-widget-content ui-corner-all" min="0" max="59" value="{{cpStartTime['s']}}" />
+              
+              <label>Sampling Period</label>
+              <label for="link-capacity-sample-hour" class="time">h</label>              
+              <input type="number"  id="link_capacity_sample_hour" class=" time-input text ui-widget-content ui-corner-all" min="0" value="{{cpSampleTime['h']}}" />
+             
+              <label for="link-capacity-sample-minute" class="time">: m</label>
+              <input type="number" id="link_capacity_sample_minute" class=" time-input text ui-widget-content ui-corner-all" min="0" max="59" value="{{cpSampleTime['m']}}" />
+              
+              <label for="link-capacity-sample-second" class="time">:: s</label>
+              <input type="number" id="link_capacity_sample_second" class=" time-input text ui-widget-content ui-corner-all" min="0" max="59" value="{{cpSampleTime['s']}}" />
+              
+              <label for="capacity-profile">Capacity Profile (vph)</label>
+              <textarea name="capacity-profile" id="cp_text" rows="10" class="text ui-widget-content ui-corner-all">{{capacityProfile}}</textarea>
+
+            </fieldset>
+          </form>
+        </div>
+        <div id="tabs-link-tools">
+          <form>
+            <fieldset>
+              <label>Sub-divide this link every:</label>
+              <input type="text" name="subdivide" id="subdivide" class="text ui-widget-content ui-corner-all" value=""/>
+              <span> </span>
+              <button id="do-subdivide" class="text ui-widget-content ui-corner-all" >Sub-divide Now</button>
+              <hr/>
+              <label for="split">Split this link into:</label>
+              <input type="text" name="split" id="split" class="text ui-widget-content ui-corner-all" value=""/>
+              <span> lanes</span>
+              <button id="do-split" class="text ui-widget-content ui-corner-all" >Split Now</button>
+              <hr/>
+              <label for="turn-pockets">Turn Pockets</label>
+              <button id="add-lt" class="text ui-widget-content ui-corner-all" >Add Left Turn</button>
+              <button id="add-rt" class="text ui-widget-content ui-corner-all" >Add Right Turn</button>
+              <hr/>
+              <label for="buttons">Miscellaneous</label>
+              <button id="choose-name" class="text ui-widget-content ui-corner-all" >Choose name</button>
+              <button id="reverse-link" class="text ui-widget-content ui-corner-all" >Create reverse link</button><br/>
+              <button id="geom-line" class="text ui-widget-content ui-corner-all" >Set geometry to line</button>
+              <button id="geom-road" class="text ui-widget-content ui-corner-all" >Set geometry to roads</button>
+            </fieldset>
+          </form>
+        </div>
+    </script>
+    <script type="text/template" id="browser-window-template">
+      <div id="wrapper">
+        <div id="left">
+          <table cellpadding="0" cellspacing="0" border="0" class="browser_table" id="{{browser_table_id}}"></table>
+        </div>
+        <div id="right">
+          <div id="resize">
+            <div id="handle"></div>
+          </div>
+        </div>
+      </div>
+    </script>
+    <script type="text/template" id="controller-editor-dialog-template">
+      <ul>
+        <li><a href="#tabs-controller-1">Controller</a></li>
+        <li><a href="#tabs-controller-2">Target</a></li>
+        <li><a href="#tabs-controller-3">Feedback</a></li>
+        <li><a href="#tabs-controller-4">Parameters</a></li>
+      </ul>
+      <div id="tabs-controller-1">
+        <form>
+          <fieldset>
+            <label for="controller-type">Type</label>
+            <select id="controller_type" name ="controller-type" class="ui-widget-content ui-corner-all">
+              <option value=""></option>
+            </select><br/>
+            <label>Refresh Rate</label>
+            <label for="controller-hour" class="time">h</label>              
+            <input type="number"  id="controller_hour" class=" time-input text ui-widget-content ui-corner-all" min="0" value="{{dt['h']}}" />
+
+            <label for="controller-minute" class="time">: m</label>
+            <input type="number" id="controller_minute" class=" time-input text ui-widget-content ui-corner-all" min="0" max="59" value="{{dt['m']}}" />
+              
+            <label for="controller-second" class="time">:: s</label>
+            <input type="number" id="controller_second" class=" time-input text ui-widget-content ui-corner-all" min="0" max="59" value="{{dt['s']}}" />
+          </fieldset>
+        </form>
+      </div>
+      <div id="tabs-controller-2">
+        <form>
+          <fieldset>
+            <label for="controller-target-table">
+              Target List<button id="target-editor" class="editor-button">Edit</button>
+            </label>
+            <table id="controller-target-table" class="editor_table" cellpadding="0" cellspacing="0" border="0">
+            </table>
+          </fieldset>
+        </form>      
+      </div>
+      <div id="tabs-controller-3">
+        <form>
+          <fieldset>
+            <label for="controller-feedback-table">
+              Feedback List<button id="feedback-editor" class="editor-button">Edit</button>
+            </label>
+            <table id="controller-feedback-table" class="editor_table" cellpadding="0" cellspacing="0" border="0">
+            </table>
+          </fieldset>
+        </form>      
+      </div>
+      <div id="tabs-controller-4">
+        <form>
+          <fieldset>
+            <table id="controller-parameter-table" class="editor_table" cellpadding="0" cellspacing="0" border="0">
+            </table>
+          </fieldset>
+        </form>
+      </div>
+    </script>
+    <script type="text/template" id="network-browser-template">
+      <div id="wrapper">
+        <table cellpadding="0" cellspacing="0" border="0" id="network-browser-table" class="browser_table"></table>
+      </div>
+    </script>
+    <script type="text/template" id="scenario-browser-template">
+      <div id="wrapper">
+        <table cellpadding="0" cellspacing="0" border="0" id="scenario-browser-table" class="browser_table"></table>
+      </div>
+    </script>
+    <script type="text/template" id="login-template">
+    <div id="wrapper">
+      <form>
+        <fieldset>
+          <label>User Name:</label>
+          <input type="text" name="user-name" id="user-name" class="text ui-widget-content ui-corner-all" value=""/>
+          <label>Password:</label>
+          <input type="password" name="password" id="password" class="text ui-widget-content ui-corner-all" value=""/>
+          <label>Database:</label>
+          <select id="database" name ="database" class="ui-widget-content ui-corner-all">
+            <option value="{{ccoradb}}">ccoradb</option>
+            <option value="{{cctest}}">cctest</option>
+          </select><br/>
+          <div>
+            <input type="submit" name="submit" id="login-button"  class="ui-widget-content ui-corner-all" value="Submit">
+          </div>
+        </fieldset>
+      </form>
+      <div id="user-login-error"></div>
+    </div>
+    </script>
+    <script type="text/template" id="message-window-template">
+    <div id="wrapper">
+      <form>
+        <fieldset>
+          <label id="message-text" class="center">{{text}}</label>
+        </fieldset>
+      </form>
+    <div>
+    </script>
+    <script type="text/template" id="network-editor-dialog-template">
+      <div id="wrapper" class="network-editor">
+        <form>
+          <fieldset>
+            <label class="red big16">{{message}}</label>
+            <label>Network ID:</label>
+            <input type="text" name="network-id" id="network-id" class="text ui-widget-content ui-corner-all" value="{{networkId}}" readonly/>
+            <label>Network Name:</label>
+            <input type="text" name="network-name" id="network-name" class="text ui-widget-content ui-corner-all" value="{{name}}"/>
+            <label>Description:</label>
+            <input type="text" name="description" id="network-description" class="text ui-widget-content ui-corner-all" value="{{description}}"/>
+            <label>Locked For Edit:</label>
+            <input type="checkbox" name="locked-for-edit" id="locked-for-edit" class="ui-widget-content ui-corner-all" value="locked-for-edit" {{lockedForEdit}}/>
+            <label>Locked For History:</label>
+            <input type="checkbox" name="locked-for-history" id="locked-for-history" class="ui-widget-content ui-corner-all" value="locked-for-history" {{lockedForHistory}}/>
+          </fieldset>
+        </form>
+      </div>
+    </script>
+    <script type="text/template" id="scenario-editor-dialog-template">
+      <div id="wrapper" class="scenario-editor">
+        <form>
+          <fieldset>
+            <label class="red big16">{{message}}</label>
+            <label>Scenario ID:</label>
+            <input type="text" name="scenario-id" id="scenario-id" class="text ui-widget-content ui-corner-all" value="{{scenarioId}}" readonly/>
+            <label>Scenario Name:</label>
+            <input type="text" name="scenario-name" id="scenario-name" class="text ui-widget-content ui-corner-all" value="{{name}}"/>
+            <label>Description:</label>
+            <input type="text" name="scenario-description" id="scenario-description" class="text ui-widget-content ui-corner-all" value="{{description}}"/>
+            <label>Project ID:</label>
+            <input type="text" name="scenario-project" id="scenario-project" class="text ui-widget-content ui-corner-all" value="{{projectId}}"/>
+            <label>Locked For Edit:</label>
+            <input type="checkbox" name="scenario-locked-for-edit" id="scenario-locked-for-edit" class="ui-widget-content ui-corner-all" value="locked-for-edit" {{lockedForEdit}}/>
+            <label>Locked For History:</label>
+            <input type="checkbox" name="scenario-locked-for-history" id="scenario-locked-for-history" class="ui-widget-content ui-corner-all" value="locked-for-history" {{lockedForHistory}}/>
+          </fieldset>
+        </form>
+      </div>
+    </script>
+    <script type="text/template" id="route-editor-dialog-template">
+      <div id="wrapper" class="route-editor">
+        <form>
+          <fieldset>
+            <label class="red big16">{{message}}</label>
+            <label>Route Name:</label>
+            <input type="text" name="route-name" id="route-name" class="text ui-widget-content ui-corner-all" value="{{name}}"/>
+            <label>Locked For Edit:</label>
+            <input type="checkbox" name="route-locked-for-edit" id="route-locked-for-edit" class="ui-widget-content ui-corner-all" value="locked-for-edit" {{lockedForEdit}}/>
+            <label>Locked For History:</label>
+            <input type="checkbox" name="route-locked-for-history" id="route-locked-for-history" class="ui-widget-content ui-corner-all" value="locked-for-history" {{lockedForHistory}}/>
+          </fieldset>
+        </form>
+      </div>
+    </script>
+  </body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+  "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+  <title>Jasmine Test Runner</title>
+  <link rel="stylesheet" type="text/css" href="../vendor/jasmine-1.2.0/jasmine.css">
+  <script src="../js/vendor/head.js"></script>
+  <script type="text/javascript">
+     function runner() {
+        _.templateSettings = {interpolate : /\{\{(.+?)\}\}/g }
+        var jasmineEnv = jasmine.getEnv();
+        jasmineEnv.updateInterval = 1000;
+            
+        var consoleReporter = new jasmine.ConsoleReporter();
+
+        // Set global for run_jasmine_test.coffee
+        console_reporter = consoleReporter;
+            
+        jasmineEnv.addReporter(consoleReporter);
+            
+        //jasmineEnv.specFilter = function(spec) {
+        //  return consoleReporter.specFilter(spec);
+        //};
+            
+        function execJasmine() {
+          jasmineEnv.execute();
+        }
+        execJasmine();
+    }
+    head.js("load-jasmine.js", function() {
+      window.runWithIncludes(runner);
+    });
+  </script>
+</head>
+
+<body>
+</body>
+
+</html>
+
